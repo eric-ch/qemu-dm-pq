@@ -1,8 +1,8 @@
-diff --git a/configure b/configure
-index 3c72fa0..0a184e2 100755
---- a/configure
-+++ b/configure
-@@ -1355,7 +1355,8 @@ fi
+Index: qemu-1.4.0/configure
+===================================================================
+--- qemu-1.4.0.orig/configure	2013-02-15 23:05:35.000000000 +0000
++++ qemu-1.4.0/configure	2014-09-08 17:12:38.000000000 +0100
+@@ -1447,7 +1447,8 @@
  # xen probe
  
  if test "$xen" != "no" ; then
@@ -12,3 +12,12 @@ index 3c72fa0..0a184e2 100755
  
    # First we test whether Xen headers and libraries are available.
    # If no, we are done and there is no Xen support.
+@@ -2192,7 +2193,7 @@
+   fi
+   mkdir -p pixman/pixman
+   pixman_cflags="-I\$(SRC_PATH)/pixman/pixman -I\$(BUILD_DIR)/pixman/pixman"
+-  pixman_libs="-L\$(BUILD_DIR)/pixman/pixman/.libs -lpixman-1"
++  pixman_libs="-L\$(BUILD_DIR)/pixman/pixman/.libs -Wl,-Bstatic -lpixman-1 -Wl,-Bdynamic"
+ fi
+ 
+ ##########################################

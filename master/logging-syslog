@@ -1,5 +1,3 @@
-diff --git a/Makefile.objs b/Makefile.objs
-index 21e9c91..e2c541e 100644
 --- a/Makefile.objs
 +++ b/Makefile.objs
 @@ -99,6 +99,10 @@ common-obj-y += qom/
@@ -13,8 +11,6 @@ index 21e9c91..e2c541e 100644
  # guest agent
  
  # FIXME: a few definitions from qapi-types.o/qapi-visit.o are needed
-diff --git a/configure b/configure
-index add6fb2..ebe4f84 100755
 --- a/configure
 +++ b/configure
 @@ -162,6 +162,7 @@ vnc_ws=""
@@ -36,7 +32,7 @@ index add6fb2..ebe4f84 100755
    --disable-brlapi) brlapi="no"
    ;;
    --enable-brlapi) brlapi="yes"
-@@ -1064,6 +1069,8 @@ echo "  --disable-xen            disable xen backend driver support"
+@@ -1064,6 +1069,8 @@ echo "  --disable-xen            disable
  echo "  --enable-xen             enable xen backend driver support"
  echo "  --disable-xen-pci-passthrough"
  echo "  --enable-xen-pci-passthrough"
@@ -55,9 +51,6 @@ index add6fb2..ebe4f84 100755
  if test "$profiler" = "yes" ; then
    echo "CONFIG_PROFILER=y" >> $config_host_mak
  fi
-diff --git a/logging.c b/logging.c
-new file mode 100644
-index 0000000..c8e1496
 --- /dev/null
 +++ b/logging.c
 @@ -0,0 +1,42 @@
@@ -103,9 +96,6 @@ index 0000000..c8e1496
 +
 +    return 0;
 +}
-diff --git a/logging.h b/logging.h
-new file mode 100644
-index 0000000..b0b2025
 --- /dev/null
 +++ b/logging.h
 @@ -0,0 +1,29 @@
@@ -138,8 +128,6 @@ index 0000000..b0b2025
 +
 +
 +#endif /* !LOGGING_H_ */
-diff --git a/vl.c b/vl.c
-index 80fb351..d839616 100644
 --- a/vl.c
 +++ b/vl.c
 @@ -170,6 +170,11 @@ int main(int argc, char **argv)
@@ -154,7 +142,7 @@ index 80fb351..d839616 100644
  //#define DEBUG_NET
  //#define DEBUG_SLIRP
  
-@@ -3659,6 +3664,10 @@ int main(int argc, char **argv, char **envp)
+@@ -3659,6 +3664,10 @@ int main(int argc, char **argv, char **e
                  break;
              case QEMU_OPTION_name:
                  qemu_name = g_strdup(optarg);

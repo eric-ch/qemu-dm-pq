@@ -1,6 +1,6 @@
---- qemu-1.4.0.orig/include/sysemu/sysemu.h	2014-09-08 17:25:21.000000000 +0100
-+++ qemu-1.4.0/include/sysemu/sysemu.h	2014-09-08 17:29:09.000000000 +0100
-@@ -91,6 +91,7 @@
+--- a/include/sysemu/sysemu.h
++++ b/include/sysemu/sysemu.h
+@@ -91,6 +91,7 @@ typedef enum DisplayType
      DT_SDL,
      DT_NOGRAPHIC,
      DT_NONE,
@@ -8,9 +8,9 @@
  } DisplayType;
  
  extern int autostart;
---- qemu-1.4.0.orig/include/ui/console.h	2014-09-08 17:25:21.000000000 +0100
-+++ qemu-1.4.0/include/ui/console.h	2014-09-08 17:29:09.000000000 +0100
-@@ -59,6 +59,7 @@
+--- a/include/ui/console.h
++++ b/include/ui/console.h
+@@ -59,6 +59,7 @@ void qemu_remove_led_event_handler(QEMUP
  void kbd_put_keycode(int keycode);
  void kbd_put_ledstate(int ledstate);
  void kbd_mouse_event(int dx, int dy, int dz, int buttons_state);
@@ -18,9 +18,9 @@
  
  /* Does the current mouse generate absolute events */
  int kbd_mouse_is_absolute(void);
---- qemu-1.4.0.orig/ui/Makefile.objs	2014-09-08 17:25:21.000000000 +0100
-+++ qemu-1.4.0/ui/Makefile.objs	2014-09-08 17:29:09.000000000 +0100
-@@ -13,6 +13,7 @@
+--- a/ui/Makefile.objs
++++ b/ui/Makefile.objs
+@@ -13,6 +13,7 @@ common-obj-$(CONFIG_SDL) += sdl.o sdl_zo
  common-obj-$(CONFIG_COCOA) += cocoa.o
  common-obj-$(CONFIG_CURSES) += curses.o
  common-obj-$(CONFIG_VNC) += $(vnc-obj-y)
@@ -28,9 +28,9 @@
  
  $(obj)/sdl.o $(obj)/sdl_zoom.o: QEMU_CFLAGS += $(SDL_CFLAGS) 
  
---- qemu-1.4.0.orig/ui/input.c	2014-09-08 17:25:21.000000000 +0100
-+++ qemu-1.4.0/ui/input.c	2014-09-08 17:29:09.000000000 +0100
-@@ -447,6 +447,30 @@
+--- a/ui/input.c
++++ b/ui/input.c
+@@ -447,6 +447,30 @@ void kbd_mouse_event(int dx, int dy, int
      }
  }
  
@@ -61,8 +61,8 @@
  int kbd_mouse_is_absolute(void)
  {
      if (QTAILQ_EMPTY(&mouse_handlers)) {
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ qemu-1.4.0/ui/xen-input.c	2014-09-08 17:29:09.000000000 +0100
+--- /dev/null
++++ b/ui/xen-input.c
 @@ -0,0 +1,481 @@
 +#include <linux/input.h>
 +#include <stdlib.h>
@@ -545,8 +545,8 @@
 +
 +  return rc;
 +}
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ qemu-1.4.0/ui/xen-input.h	2014-09-08 17:29:09.000000000 +0100
+--- /dev/null
++++ b/ui/xen-input.h
 @@ -0,0 +1,30 @@
 +#ifndef UI_XEN_INPUT_H_
 +# define UI_XEN_INPUT_H_
@@ -578,9 +578,9 @@
 +int32_t xen_input_send_shutdown(int32_t reason);
 +
 +#endif /* !UI_XEN_INPUT_H_ */
---- qemu-1.4.0.orig/vl.c	2014-09-08 17:29:06.000000000 +0100
-+++ qemu-1.4.0/vl.c	2014-09-08 17:29:09.000000000 +0100
-@@ -169,6 +169,7 @@
+--- a/vl.c
++++ b/vl.c
+@@ -169,6 +169,7 @@ int main(int argc, char **argv)
  
  #include "ui/qemu-spice.h"
  #include "qapi/string-input-visitor.h"
@@ -588,7 +588,7 @@
  
  /* XenClient: logging-syslog */
  #ifdef CONFIG_SYSLOG_LOGGING
-@@ -186,7 +187,7 @@
+@@ -186,7 +187,7 @@ int main(int argc, char **argv)
  static const char *data_dir;
  const char *bios_name = NULL;
  enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
@@ -597,7 +597,7 @@
  static int display_remote;
  const char* keyboard_layout = NULL;
  ram_addr_t ram_size;
-@@ -4273,6 +4274,9 @@
+@@ -4273,6 +4274,9 @@ int main(int argc, char **argv, char **e
          cocoa_display_init(ds, full_screen);
          break;
  #endif

@@ -1,6 +1,4 @@
 This patch adds the battery management to qemu 1.4
-diff --git a/hw/Makefile.objs b/hw/Makefile.objs
-index 447e32a..2bca835 100644
 --- a/hw/Makefile.objs
 +++ b/hw/Makefile.objs
 @@ -195,6 +195,7 @@ common-obj-$(CONFIG_BRLAPI) += baum.o
@@ -11,8 +9,6 @@ index 447e32a..2bca835 100644
  
  # Per-target files
  # virtio has to be here due to weird dependency between PCI and virtio-net.
-diff --git a/hw/acpi_piix4.c b/hw/acpi_piix4.c
-index 23994d9..e7829b7 100644
 --- a/hw/acpi_piix4.c
 +++ b/hw/acpi_piix4.c
 @@ -33,6 +33,9 @@
@@ -25,7 +21,7 @@ index 23994d9..e7829b7 100644
  //#define DEBUG
  
  #ifdef DEBUG
-@@ -395,8 +398,15 @@ static int piix4_pm_initfn(PCIDevice *dev)
+@@ -395,8 +398,15 @@ static int piix4_pm_initfn(PCIDevice *de
      pci_conf[0x09] = 0x00;
      pci_conf[0x3d] = 0x01; // interrupt pin 1
  
@@ -43,7 +39,7 @@ index 23994d9..e7829b7 100644
  
      /* XenClient: acpi
       * Enable ACPI, QEMU doesn't enable it by default */
-@@ -437,6 +447,7 @@ static int piix4_pm_initfn(PCIDevice *dev)
+@@ -437,6 +447,7 @@ static int piix4_pm_initfn(PCIDevice *de
  
      piix4_acpi_system_hot_add_init(pci_address_space_io(dev), dev->bus, s);
  
@@ -51,9 +47,6 @@ index 23994d9..e7829b7 100644
      return 0;
  }
  
-diff --git a/hw/xen_battery.c b/hw/xen_battery.c
-new file mode 100644
-index 0000000..4bafe42
 --- /dev/null
 +++ b/hw/xen_battery.c
 @@ -0,0 +1,714 @@
@@ -771,9 +764,6 @@ index 0000000..4bafe42
 +    XBM_ERROR_MSG("unable to initialize the battery emulation\n");
 +    return -1;
 +}
-diff --git a/hw/xen_battery.h b/hw/xen_battery.h
-new file mode 100644
-index 0000000..66b1b43
 --- /dev/null
 +++ b/hw/xen_battery.h
 @@ -0,0 +1,58 @@
@@ -835,11 +825,9 @@ index 0000000..66b1b43
 +bool xen_battery_get_option(void);
 +
 +#endif /* !XEN_BATTERY_H_ */
-diff --git a/qemu-options.hx b/qemu-options.hx
-index 9d7131a..a6a9474 100644
 --- a/qemu-options.hx
 +++ b/qemu-options.hx
-@@ -344,8 +344,8 @@ Set default value of @var{driver}'s property @var{prop} to @var{value}, e.g.:
+@@ -344,8 +344,8 @@ Set default value of @var{driver}'s prop
  qemu-system-i386 -global ide-drive.physical_block_size=4096 -drive file=file,if=ide,index=0,media=disk
  @end example
  
@@ -850,7 +838,7 @@ index 9d7131a..a6a9474 100644
  created automatically and set properties on it, use -@option{device}.
  ETEXI
  
-@@ -2557,6 +2557,9 @@ DEF("xen-attach", 0, QEMU_OPTION_xen_attach,
+@@ -2557,6 +2557,9 @@ DEF("xen-attach", 0, QEMU_OPTION_xen_att
      "-xen-attach     attach to existing xen domain\n"
      "                xend will use this when starting QEMU\n",
      QEMU_ARCH_ALL)
@@ -860,7 +848,7 @@ index 9d7131a..a6a9474 100644
  STEXI
  @item -xen-domid @var{id}
  @findex -xen-domid
-@@ -2569,6 +2572,9 @@ Warning: should not be used when xend is in use (XEN only).
+@@ -2569,6 +2572,9 @@ Warning: should not be used when xend is
  @findex -xen-attach
  Attach to existing xen domain.
  xend will use this when starting QEMU (XEN only).
@@ -870,8 +858,6 @@ index 9d7131a..a6a9474 100644
  ETEXI
  
  DEF("no-reboot", 0, QEMU_OPTION_no_reboot, \
-diff --git a/vl.c b/vl.c
-index dae9e4c..075bb0a 100644
 --- a/vl.c
 +++ b/vl.c
 @@ -176,6 +176,10 @@ int main(int argc, char **argv)
@@ -885,7 +871,7 @@ index dae9e4c..075bb0a 100644
  //#define DEBUG_NET
  //#define DEBUG_SLIRP
  
-@@ -3752,6 +3756,16 @@ int main(int argc, char **argv, char **envp)
+@@ -3752,6 +3756,16 @@ int main(int argc, char **argv, char **e
                  }
                  xen_mode = XEN_ATTACH;
                  break;

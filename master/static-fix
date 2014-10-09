@@ -1,8 +1,6 @@
-Index: qemu-1.4.0/configure
-===================================================================
---- qemu-1.4.0.orig/configure	2013-02-15 23:05:35.000000000 +0000
-+++ qemu-1.4.0/configure	2014-09-08 17:12:38.000000000 +0100
-@@ -1447,7 +1447,8 @@
+--- a/configure
++++ b/configure
+@@ -1447,7 +1447,8 @@ fi
  # xen probe
  
  if test "$xen" != "no" ; then
@@ -12,7 +10,7 @@ Index: qemu-1.4.0/configure
  
    # First we test whether Xen headers and libraries are available.
    # If no, we are done and there is no Xen support.
-@@ -2192,7 +2193,7 @@
+@@ -2192,7 +2193,7 @@ else
    fi
    mkdir -p pixman/pixman
    pixman_cflags="-I\$(SRC_PATH)/pixman/pixman -I\$(BUILD_DIR)/pixman/pixman"

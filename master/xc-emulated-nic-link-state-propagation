@@ -1,8 +1,6 @@
-diff --git a/hw/rtl8139.c b/hw/rtl8139.c
-index d7716be..7528641 100644
 --- a/hw/rtl8139.c
 +++ b/hw/rtl8139.c
-@@ -2660,6 +2660,12 @@ static void rtl8139_IntrStatus_write(RTL8139State *s, uint32_t val)
+@@ -2660,6 +2660,12 @@ static void rtl8139_IntrStatus_write(RTL
      s->IntrStatus = 0;
      rtl8139_update_irq(s);
  
@@ -15,11 +13,9 @@ index d7716be..7528641 100644
      s->IntrStatus = newStatus;
      /*
       * Computing if we miss an interrupt here is not that correct but
-diff --git a/hw/xen.h b/hw/xen.h
-index db7a1d2..046fa31 100644
 --- a/hw/xen.h
 +++ b/hw/xen.h
-@@ -47,6 +47,9 @@ void xen_hvm_inject_msi(uint64_t addr, uint32_t data);
+@@ -47,6 +47,9 @@ void xen_hvm_inject_msi(uint64_t addr, u
  int xen_register_pcidev(PCIDevice *pci_dev);
  void xen_cmos_set_s3_resume(void *opaque, int irq, int level);
  
@@ -29,8 +25,6 @@ index db7a1d2..046fa31 100644
  qemu_irq *xen_interrupt_controller_init(void);
  
  int xen_init(void);
-diff --git a/hw/xen_backend.c b/hw/xen_backend.c
-index a227ca6..ff93081 100644
 --- a/hw/xen_backend.c
 +++ b/hw/xen_backend.c
 @@ -38,6 +38,7 @@
@@ -41,7 +35,7 @@ index a227ca6..ff93081 100644
  
  #include <xen/grant_table.h>
  
-@@ -589,6 +590,125 @@ static int xenstore_scan(const char *type, int dom, struct XenDevOps *ops)
+@@ -589,6 +590,125 @@ static int xenstore_scan(const char *typ
      return 0;
  }
  
@@ -167,7 +161,7 @@ index a227ca6..ff93081 100644
  static void xenstore_update_be(char *watch, char *type, int dom,
                                 struct XenDevOps *ops)
  {
-@@ -661,6 +781,11 @@ static void xenstore_update(void *unused)
+@@ -661,6 +781,11 @@ static void xenstore_update(void *unused
      if (sscanf(vec[XS_WATCH_TOKEN], "fe:%" PRIxPTR, &ptr) == 1) {
          xenstore_update_fe(vec[XS_WATCH_PATH], (void*)ptr);
      }
@@ -179,8 +173,6 @@ index a227ca6..ff93081 100644
  
  cleanup:
      free(vec);
-diff --git a/net/net.c b/net/net.c
-index be03a8d..a7c61b0 100644
 --- a/net/net.c
 +++ b/net/net.c
 @@ -40,6 +40,10 @@
@@ -194,7 +186,7 @@ index be03a8d..a7c61b0 100644
  /* Net bridge is currently not supported for W32. */
  #if !defined(_WIN32)
  # define CONFIG_NET_BRIDGE
-@@ -256,6 +260,13 @@ NICState *qemu_new_nic(NetClientInfo *info,
+@@ -256,6 +260,13 @@ NICState *qemu_new_nic(NetClientInfo *in
          nic->ncs[i].queue_index = i;
      }
  

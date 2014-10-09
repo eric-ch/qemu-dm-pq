@@ -1,5 +1,3 @@
-diff --git a/block.c b/block.c
-index 50dab8e..71f9426 100644
 --- a/block.c
 +++ b/block.c
 @@ -4566,3 +4566,31 @@ out:
@@ -34,11 +32,9 @@ index 50dab8e..71f9426 100644
 +    }
 +    return -ENOTSUP;
 +}
-diff --git a/block/Makefile.objs b/block/Makefile.objs
-index c067f38..badc5ba 100644
 --- a/block/Makefile.objs
 +++ b/block/Makefile.objs
-@@ -6,6 +6,8 @@ block-obj-y += parallels.o blkdebug.o blkverify.o
+@@ -6,6 +6,8 @@ block-obj-y += parallels.o blkdebug.o bl
  block-obj-$(CONFIG_WIN32) += raw-win32.o win32-aio.o
  block-obj-$(CONFIG_POSIX) += raw-posix.o
  block-obj-$(CONFIG_LINUX_AIO) += linux-aio.o
@@ -47,9 +43,6 @@ index c067f38..badc5ba 100644
  
  ifeq ($(CONFIG_POSIX),y)
  block-obj-y += nbd.o sheepdog.o
-diff --git a/block/pt-posix.c b/block/pt-posix.c
-new file mode 100644
-index 0000000..e729606
 --- /dev/null
 +++ b/block/pt-posix.c
 @@ -0,0 +1,677 @@
@@ -730,9 +723,6 @@ index 0000000..e729606
 +}
 +
 +block_init(bdrv_pt_init);
-diff --git a/block/pt.c b/block/pt.c
-new file mode 100644
-index 0000000..78284bc
 --- /dev/null
 +++ b/block/pt.c
 @@ -0,0 +1,159 @@
@@ -895,11 +885,9 @@ index 0000000..78284bc
 +}
 +
 +block_init(bdrv_pt_init);
-diff --git a/blockdev.c b/blockdev.c
-index 63e6f1e..2ea3aa3 100644
 --- a/blockdev.c
 +++ b/blockdev.c
-@@ -33,6 +33,8 @@ static const char *const if_name[IF_COUNT] = {
+@@ -33,6 +33,8 @@ static const char *const if_name[IF_COUN
      [IF_SD] = "sd",
      [IF_VIRTIO] = "virtio",
      [IF_XEN] = "xen",
@@ -908,7 +896,7 @@ index 63e6f1e..2ea3aa3 100644
  };
  
  static const int if_max_devs[IF_COUNT] = {
-@@ -282,6 +284,7 @@ DriveInfo *drive_init(QemuOpts *opts, BlockInterfaceType block_default_type)
+@@ -282,6 +284,7 @@ DriveInfo *drive_init(QemuOpts *opts, Bl
      const char *serial;
      const char *mediastr = "";
      BlockInterfaceType type;
@@ -916,7 +904,7 @@ index 63e6f1e..2ea3aa3 100644
      enum { MEDIA_DISK, MEDIA_CDROM } media;
      int bus_id, unit_id;
      int cyls, heads, secs, translation;
-@@ -328,6 +331,9 @@ DriveInfo *drive_init(QemuOpts *opts, BlockInterfaceType block_default_type)
+@@ -328,6 +331,9 @@ DriveInfo *drive_init(QemuOpts *opts, Bl
          type = block_default_type;
      }
  
@@ -926,7 +914,7 @@ index 63e6f1e..2ea3aa3 100644
      max_devs = if_max_devs[type];
  
      if (cyls || heads || secs) {
-@@ -555,11 +561,14 @@ DriveInfo *drive_init(QemuOpts *opts, BlockInterfaceType block_default_type)
+@@ -555,11 +561,14 @@ DriveInfo *drive_init(QemuOpts *opts, Bl
      bdrv_set_io_limits(dinfo->bdrv, &io_limits);
  
      switch(type) {
@@ -941,18 +929,14 @@ index 63e6f1e..2ea3aa3 100644
          break;
      case IF_SD:
      case IF_FLOPPY:
-diff --git a/hw/ide/Makefile.objs b/hw/ide/Makefile.objs
-index 5c8c22a..1807162 100644
 --- a/hw/ide/Makefile.objs
 +++ b/hw/ide/Makefile.objs
-@@ -8,3 +8,5 @@ common-obj-$(CONFIG_IDE_MACIO) += macio.o
+@@ -8,3 +8,5 @@ common-obj-$(CONFIG_IDE_MACIO) += macio.
  common-obj-$(CONFIG_IDE_VIA) += via.o
  common-obj-$(CONFIG_AHCI) += ahci.o
  common-obj-$(CONFIG_AHCI) += ich.o
 +# XenClient: ATAPI
 +common-obj-$(CONFIG_XEN) += atapi_pt.o
-diff --git a/hw/ide/atapi.c b/hw/ide/atapi.c
-index 861fd2b..1d035ff 100644
 --- a/hw/ide/atapi.c
 +++ b/hw/ide/atapi.c
 @@ -26,6 +26,8 @@
@@ -964,7 +948,7 @@ index 861fd2b..1d035ff 100644
  static void ide_atapi_cmd_read_dma_cb(void *opaque, int ret);
  
  static void padstr8(uint8_t *buf, int buf_size, const char *src)
-@@ -242,7 +244,7 @@ void ide_atapi_cmd_reply_end(IDEState *s)
+@@ -242,7 +244,7 @@ void ide_atapi_cmd_reply_end(IDEState *s
  }
  
  /* send a reply of 'size' bytes in s->io_buffer to an ATAPI command */
@@ -973,9 +957,6 @@ index 861fd2b..1d035ff 100644
  {
      if (size > max_size)
          size = max_size;
-diff --git a/hw/ide/atapi_pt.c b/hw/ide/atapi_pt.c
-new file mode 100644
-index 0000000..3f7225a
 --- /dev/null
 +++ b/hw/ide/atapi_pt.c
 @@ -0,0 +1,1444 @@
@@ -2423,9 +2404,6 @@ index 0000000..3f7225a
 +
 +    atapi_pt_do_sg_io(s);
 +}
-diff --git a/hw/ide/atapi_pt.h b/hw/ide/atapi_pt.h
-new file mode 100644
-index 0000000..b757571
 --- /dev/null
 +++ b/hw/ide/atapi_pt.h
 @@ -0,0 +1,140 @@
@@ -2569,11 +2547,9 @@ index 0000000..b757571
 +void atapi_pt_dout_fetch_pio_done(IDEState *s);
 +
 +#endif /* !ATAPI_PT_H_ */
-diff --git a/hw/ide/core.c b/hw/ide/core.c
-index 3743dc3..b8a713d 100644
 --- a/hw/ide/core.c
 +++ b/hw/ide/core.c
-@@ -1399,8 +1399,9 @@ void ide_exec_cmd(IDEBus *bus, uint32_t val)
+@@ -1399,8 +1399,9 @@ void ide_exec_cmd(IDEBus *bus, uint32_t
          s->status = READY_STAT | SEEK_STAT;
          s->atapi_dma = s->feature & 1;
          s->nsector = 1;
@@ -2584,7 +2560,7 @@ index 3743dc3..b8a713d 100644
          break;
      /* CF-ATA commands */
      case CFA_REQ_EXT_ERROR_CODE:
-@@ -1765,7 +1766,10 @@ void ide_cmd_write(void *opaque, uint32_t addr, uint32_t val)
+@@ -1765,7 +1766,10 @@ void ide_cmd_write(void *opaque, uint32_
  static bool ide_is_pio_out(IDEState *s)
  {
      if (s->end_transfer_func == ide_sector_write ||
@@ -2596,7 +2572,7 @@ index 3743dc3..b8a713d 100644
          return false;
      } else if (s->end_transfer_func == ide_sector_read ||
                 s->end_transfer_func == ide_transfer_stop ||
-@@ -1976,6 +1980,7 @@ int ide_init_drive(IDEState *s, BlockDriverState *bs, IDEDriveKind kind,
+@@ -1976,6 +1980,7 @@ int ide_init_drive(IDEState *s, BlockDri
      uint64_t nb_sectors;
  
      s->bs = bs;
@@ -2604,7 +2580,7 @@ index 3743dc3..b8a713d 100644
      s->drive_kind = kind;
  
      bdrv_get_geometry(bs, &nb_sectors);
-@@ -2015,7 +2020,15 @@ int ide_init_drive(IDEState *s, BlockDriverState *bs, IDEDriveKind kind,
+@@ -2015,7 +2020,15 @@ int ide_init_drive(IDEState *s, BlockDri
      } else {
          switch (kind) {
          case IDE_CD:
@@ -2621,7 +2597,7 @@ index 3743dc3..b8a713d 100644
              break;
          case IDE_CFATA:
              strcpy(s->drive_model_str, "QEMU MICRODRIVE");
-@@ -2034,6 +2047,7 @@ int ide_init_drive(IDEState *s, BlockDriverState *bs, IDEDriveKind kind,
+@@ -2034,6 +2047,7 @@ int ide_init_drive(IDEState *s, BlockDri
  
      ide_reset(s);
      bdrv_iostatus_enable(bs);
@@ -2629,7 +2605,7 @@ index 3743dc3..b8a713d 100644
      return 0;
  }
  
-@@ -2047,8 +2061,10 @@ static void ide_init1(IDEBus *bus, int unit)
+@@ -2047,8 +2061,10 @@ static void ide_init1(IDEBus *bus, int u
      s->drive_serial = drive_serial++;
      /* we need at least 2k alignment for accessing CDROMs using O_DIRECT */
      s->io_buffer_total_len = IDE_DMA_BUF_SECTORS*512 + 4;
@@ -2642,7 +2618,7 @@ index 3743dc3..b8a713d 100644
  
      s->smart_selftest_data = qemu_blockalign(s->bs, 512);
      memset(s->smart_selftest_data, 0, 512);
-@@ -2191,6 +2207,8 @@ static EndTransferFunc* transfer_end_table[] = {
+@@ -2191,6 +2207,8 @@ static EndTransferFunc* transfer_end_tab
          ide_atapi_cmd_reply_end,
          ide_atapi_cmd,
          ide_dummy_transfer_stop,
@@ -2651,8 +2627,6 @@ index 3743dc3..b8a713d 100644
  };
  
  static int transfer_end_table_idx(EndTransferFunc *fn)
-diff --git a/hw/ide/internal.h b/hw/ide/internal.h
-index d80360e..9198f7e 100644
 --- a/hw/ide/internal.h
 +++ b/hw/ide/internal.h
 @@ -316,7 +316,9 @@ typedef struct IDEDMAOps IDEDMAOps;
@@ -2713,11 +2687,9 @@ index d80360e..9198f7e 100644
  
  void ide_ioport_write(void *opaque, uint32_t addr, uint32_t val);
  uint32_t ide_ioport_read(void *opaque, uint32_t addr1);
-diff --git a/hw/ide/pci.c b/hw/ide/pci.c
-index 59fd539..eff7297 100644
 --- a/hw/ide/pci.c
 +++ b/hw/ide/pci.c
-@@ -308,6 +308,8 @@ void bmdma_cmd_writeb(BMDMAState *bm, uint32_t val)
+@@ -308,6 +308,8 @@ void bmdma_cmd_writeb(BMDMAState *bm, ui
               * whole DMA operation will be submitted to disk with a single
               * aio operation with preadv/pwritev.
               */
@@ -2726,11 +2698,9 @@ index 59fd539..eff7297 100644
              if (bm->bus->dma->aiocb) {
                  bdrv_drain_all();
                  assert(bm->bus->dma->aiocb == NULL);
-diff --git a/hw/ide/qdev.c b/hw/ide/qdev.c
-index 208f385..0313b9f 100644
 --- a/hw/ide/qdev.c
 +++ b/hw/ide/qdev.c
-@@ -105,10 +105,15 @@ IDEDevice *ide_create_drive(IDEBus *bus, int unit, DriveInfo *drive)
+@@ -105,10 +105,15 @@ IDEDevice *ide_create_drive(IDEBus *bus,
  {
      DeviceState *dev;
  
@@ -2800,11 +2770,9 @@ index 208f385..0313b9f 100644
  }
  
  type_init(ide_register_types)
-diff --git a/include/block/block.h b/include/block/block.h
-index 5c3b911..48a1aa3 100644
 --- a/include/block/block.h
 +++ b/include/block/block.h
-@@ -449,4 +449,9 @@ int bdrv_debug_breakpoint(BlockDriverState *bs, const char *event,
+@@ -449,4 +449,9 @@ int bdrv_debug_breakpoint(BlockDriverSta
  int bdrv_debug_resume(BlockDriverState *bs, const char *tag);
  bool bdrv_debug_is_suspended(BlockDriverState *bs, const char *tag);
  
@@ -2814,8 +2782,6 @@ index 5c3b911..48a1aa3 100644
 +                                  uint32_t const cmd, uint32_t * answer);
 +
  #endif
-diff --git a/include/block/block_int.h b/include/block/block_int.h
-index eaad53e..125bb4e 100644
 --- a/include/block/block_int.h
 +++ b/include/block/block_int.h
 @@ -204,6 +204,12 @@ struct BlockDriver {
@@ -2831,9 +2797,6 @@ index eaad53e..125bb4e 100644
      QLIST_ENTRY(BlockDriver) list;
  };
  
-diff --git a/include/block/pt.h b/include/block/pt.h
-new file mode 100644
-index 0000000..ca938bf
 --- /dev/null
 +++ b/include/block/pt.h
 @@ -0,0 +1,51 @@
@@ -2888,8 +2851,6 @@ index 0000000..ca938bf
 +};
 +
 +#endif /* !PT_H_ */
-diff --git a/include/qemu/event_notifier.h b/include/qemu/event_notifier.h
-index 88b57af..44e8381 100644
 --- a/include/qemu/event_notifier.h
 +++ b/include/qemu/event_notifier.h
 @@ -26,6 +26,8 @@ struct EventNotifier {
@@ -2901,7 +2862,7 @@ index 88b57af..44e8381 100644
  };
  
  typedef void EventNotifierHandler(EventNotifier *);
-@@ -39,6 +41,7 @@ int event_notifier_set_handler(EventNotifier *, EventNotifierHandler *);
+@@ -39,6 +41,7 @@ int event_notifier_set_handler(EventNoti
  #ifdef CONFIG_POSIX
  void event_notifier_init_fd(EventNotifier *, int fd);
  int event_notifier_get_fd(EventNotifier *);
@@ -2909,8 +2870,6 @@ index 88b57af..44e8381 100644
  #else
  HANDLE event_notifier_get_handle(EventNotifier *);
  #endif
-diff --git a/include/sysemu/blockdev.h b/include/sysemu/blockdev.h
-index 1fe5332..7093670 100644
 --- a/include/sysemu/blockdev.h
 +++ b/include/sysemu/blockdev.h
 @@ -26,6 +26,8 @@ typedef enum {
@@ -2930,11 +2889,9 @@ index 1fe5332..7093670 100644
  };
  
  DriveInfo *drive_get(BlockInterfaceType type, int bus, int unit);
-diff --git a/util/event_notifier-posix.c b/util/event_notifier-posix.c
-index 713d756..194f0c9 100644
 --- a/util/event_notifier-posix.c
 +++ b/util/event_notifier-posix.c
-@@ -119,3 +119,39 @@ int event_notifier_test_and_clear(EventNotifier *e)
+@@ -119,3 +119,39 @@ int event_notifier_test_and_clear(EventN
  
      return value;
  }

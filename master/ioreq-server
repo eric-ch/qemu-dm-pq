@@ -1,8 +1,6 @@
-diff --git a/hw/xen_common.h b/hw/xen_common.h
-index 517bfd1..5d14072 100644
 --- a/hw/xen_common.h
 +++ b/hw/xen_common.h
-@@ -152,34 +152,7 @@ static inline int xen_xc_hvm_inject_msi(XenXC xen_xc, domid_t dom,
+@@ -152,34 +152,7 @@ static inline int xen_xc_hvm_inject_msi(
  }
  #endif
  
@@ -38,7 +36,7 @@ index 517bfd1..5d14072 100644
  static inline int xen_xc_hvm_register_pcidev(XenXC xen_xc, domid_t dom,
          unsigned int serverid, uint16_t domain,
          uint8_t bus, uint8_t device, uint8_t function)
-@@ -208,8 +181,6 @@ static inline int xen_xc_hvm_register_ioreq_server(XenXC xen_xc, domid_t dom)
+@@ -208,8 +181,6 @@ static inline int xen_xc_hvm_register_io
      return xc_hvm_register_ioreq_server(xen_xc, dom);
  }
  
@@ -47,11 +45,9 @@ index 517bfd1..5d14072 100644
  void destroy_hvm_domain(bool reboot);
  
  /* shutdown/destroy current domain because of an error */
-diff --git a/xen-all.c b/xen-all.c
-index 794ed55..206d1fd 100644
 --- a/xen-all.c
 +++ b/xen-all.c
-@@ -70,40 +70,6 @@ static inline ioreq_t *xen_vcpu_ioreq(shared_iopage_t *shared_page, int vcpu)
+@@ -70,40 +70,6 @@ static inline ioreq_t *xen_vcpu_ioreq(sh
  #define HVM_PARAM_BUFIOREQ_EVTCHN 26
  #endif
  
@@ -92,7 +88,7 @@ index 794ed55..206d1fd 100644
  static inline unsigned long xen_buffered_iopage(void)
  {
      unsigned long pfn;
-@@ -129,8 +95,6 @@ static inline evtchn_port_or_error_t xen_buffered_channel(void)
+@@ -129,8 +95,6 @@ static inline evtchn_port_or_error_t xen
      return xc_hvm_get_ioreq_server_buf_channel(xen_xc, xen_domid, serverid);
  }
  
@@ -101,7 +97,7 @@ index 794ed55..206d1fd 100644
  #define BUFFER_IO_MAX_DELAY  100
  
  typedef struct XenPhysmap {
-@@ -191,8 +155,8 @@ int xen_register_pcidev(PCIDevice *pci_dev)
+@@ -191,8 +155,8 @@ int xen_register_pcidev(PCIDevice *pci_d
          }
      }
  
@@ -112,7 +108,7 @@ index 794ed55..206d1fd 100644
  
      return xen_xc_hvm_register_pcidev(xen_xc, xen_domid, serverid,
                                        0, 0, pci_dev->devfn >> 3,
-@@ -369,7 +333,7 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr)
+@@ -369,7 +333,7 @@ void xen_ram_alloc(ram_addr_t ram_addr,
          /* RAM already populated in Xen */
          fprintf(stderr, "%s: do not alloc "RAM_ADDR_FMT
                  " bytes of ram at "RAM_ADDR_FMT" when runstate is INMIGRATE\n",
@@ -129,7 +125,7 @@ index 794ed55..206d1fd 100644
  static void cpu_ioreq_config_space(ioreq_t *req)
  {
      uint64_t cf8 = req->addr;
-@@ -1005,7 +968,6 @@ static void cpu_ioreq_event(ioreq_t *req)
+@@ -1005,7 +968,6 @@ static void cpu_ioreq_event(ioreq_t *req
      }
  }
  
@@ -152,7 +148,7 @@ index 794ed55..206d1fd 100644
          default:
              hw_error("Invalid ioreq type 0x%x\n", req->type);
      }
-@@ -1197,24 +1157,33 @@ void xenstore_store_pv_console_info(int i, CharDriverState *chr)
+@@ -1197,24 +1157,33 @@ void xenstore_store_pv_console_info(int
  static void xenstore_record_dm_state(struct xs_handle *xs, const char *state)
  {
      char path[50];

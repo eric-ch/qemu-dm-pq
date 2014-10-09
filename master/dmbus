@@ -1,5 +1,3 @@
-diff --git a/Makefile.target b/Makefile.target
-index 760da1e..1477499 100644
 --- a/Makefile.target
 +++ b/Makefile.target
 @@ -121,6 +121,7 @@ LIBS+=-lz
@@ -10,8 +8,6 @@ index 760da1e..1477499 100644
  obj-$(CONFIG_NO_XEN) += xen-stub.o
  
  # Hardware support
-diff --git a/configure b/configure
-index ebe4f84..79c34f3 100755
 --- a/configure
 +++ b/configure
 @@ -1385,6 +1385,34 @@ esac
@@ -49,9 +45,6 @@ index ebe4f84..79c34f3 100755
  # pkg-config probe
  
  if ! has "$pkg_config_exe"; then
-diff --git a/xen-dmbus.c b/xen-dmbus.c
-new file mode 100644
-index 0000000..d68ccf1
 --- /dev/null
 +++ b/xen-dmbus.c
 @@ -0,0 +1,354 @@
@@ -409,9 +402,6 @@ index 0000000..d68ccf1
 +
 +    return b;
 +}
-diff --git a/xen-dmbus.h b/xen-dmbus.h
-new file mode 100644
-index 0000000..10baebb
 --- /dev/null
 +++ b/xen-dmbus.h
 @@ -0,0 +1,28 @@

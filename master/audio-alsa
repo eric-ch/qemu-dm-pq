@@ -1,6 +1,4 @@
 This patch is used for enabling audio devices in stubdomain
-diff --git a/audio/alsaaudio.c b/audio/alsaaudio.c
-index e4e5442..de62c43 100644
 --- a/audio/alsaaudio.c
 +++ b/audio/alsaaudio.c
 @@ -26,6 +26,9 @@
@@ -29,7 +27,7 @@ index e4e5442..de62c43 100644
  };
  
  struct alsa_params_req {
-@@ -505,6 +512,23 @@ static int alsa_open (int in, struct alsa_params_req *req,
+@@ -505,6 +512,23 @@ static int alsa_open (int in, struct als
          return -1;
      }
  
@@ -53,7 +51,7 @@ index e4e5442..de62c43 100644
      err = snd_pcm_hw_params_any (handle, hw_params);
      if (err < 0) {
          alsa_logerr2 (err, typ, "Failed to initialize hardware parameters\n");
-@@ -1162,6 +1186,86 @@ static void alsa_audio_fini (void *opaque)
+@@ -1162,6 +1186,86 @@ static void alsa_audio_fini (void *opaqu
      (void) opaque;
  }
  
@@ -140,7 +138,7 @@ index e4e5442..de62c43 100644
  static struct audio_option alsa_options[] = {
      {
          .name        = "DAC_SIZE_IN_USEC",
-@@ -1228,6 +1332,13 @@ static struct audio_option alsa_options[] = {
+@@ -1228,6 +1332,13 @@ static struct audio_option alsa_options[
          .valp        = &conf.verbose,
          .descr       = "Behave in a more verbose way"
      },
@@ -154,11 +152,9 @@ index e4e5442..de62c43 100644
      { /* End of list */ }
  };
  
-diff --git a/audio/audio.h b/audio/audio.h
-index e7ea397..d890290 100644
 --- a/audio/audio.h
 +++ b/audio/audio.h
-@@ -163,4 +163,7 @@ static inline void *advance (void *p, int incr)
+@@ -163,4 +163,7 @@ static inline void *advance (void *p, in
  int wav_start_capture (CaptureState *s, const char *path, int freq,
                         int bits, int nchannels);
  
@@ -166,11 +162,9 @@ index e7ea397..d890290 100644
 +void alsa_volume(int, int, int);
 +
  #endif  /* audio.h */
-diff --git a/configure b/configure
-index 74245e7..294fc03 100755
 --- a/configure
 +++ b/configure
-@@ -2023,9 +2023,11 @@ audio_drv_list=`echo "$audio_drv_list" | sed -e 's/,/ /g'`
+@@ -2023,9 +2023,11 @@ audio_drv_list=`echo "$audio_drv_list" |
  for drv in $audio_drv_list; do
      case $drv in
      alsa)
@@ -184,8 +178,6 @@ index 74245e7..294fc03 100755
      ;;
  
      fmod)
-diff --git a/hw/ac97.c b/hw/ac97.c
-index 6c565e7..981647c 100644
 --- a/hw/ac97.c
 +++ b/hw/ac97.c
 @@ -122,6 +122,10 @@ enum {
@@ -199,7 +191,7 @@ index 6c565e7..981647c 100644
  #define REC_MASK 7
  enum {
      REC_MIC = 0,
-@@ -481,9 +485,30 @@ static void update_volume_in (AC97LinkState *s)
+@@ -481,9 +485,30 @@ static void update_volume_in (AC97LinkSt
  
  static void set_volume (AC97LinkState *s, int index, uint32_t val)
  {

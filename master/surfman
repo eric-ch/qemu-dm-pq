@@ -1,8 +1,6 @@
-diff --git a/hw/pci/pci.c b/hw/pci/pci.c
-index 2b2fec5..63793cc 100644
 --- a/hw/pci/pci.c
 +++ b/hw/pci/pci.c
-@@ -767,6 +767,20 @@ static void pci_config_free(PCIDevice *pci_dev)
+@@ -767,6 +767,20 @@ static void pci_config_free(PCIDevice *p
      g_free(pci_dev->used);
  }
  
@@ -23,7 +21,7 @@ index 2b2fec5..63793cc 100644
  /* -1 for devfn means auto assign */
  static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
                                           const char *name, int devfn)
-@@ -778,15 +792,31 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
+@@ -778,15 +792,31 @@ static PCIDevice *do_pci_register_device
      if (devfn < 0) {
          for(devfn = bus->devfn_min ; devfn < ARRAY_SIZE(bus->devices);
              devfn += PCI_FUNC_MAX) {

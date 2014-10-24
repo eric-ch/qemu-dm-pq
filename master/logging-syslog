@@ -130,19 +130,7 @@
 +#endif /* !LOGGING_H_ */
 --- a/vl.c
 +++ b/vl.c
-@@ -170,6 +170,11 @@ int main(int argc, char **argv)
- #include "ui/qemu-spice.h"
- #include "qapi/string-input-visitor.h"
- 
-+/* XenClient: logging-syslog */
-+#ifdef CONFIG_SYSLOG_LOGGING
-+# include "logging.h"
-+#endif
-+
- //#define DEBUG_NET
- //#define DEBUG_SLIRP
- 
-@@ -3659,6 +3664,10 @@ int main(int argc, char **argv, char **e
+@@ -3659,6 +3659,10 @@ int main(int argc, char **argv, char **e
                  break;
              case QEMU_OPTION_name:
                  qemu_name = g_strdup(optarg);
@@ -153,3 +141,14 @@
  		 {
  		     char *p = strchr(qemu_name, ',');
  		     if (p != NULL) {
+--- a/include/qemu-common.h
++++ b/include/qemu-common.h
+@@ -430,4 +430,8 @@ int64_t pow2floor(int64_t value);
+ int uleb128_encode_small(uint8_t *out, uint32_t n);
+ int uleb128_decode_small(const uint8_t *in, uint32_t *n);
+ 
++#ifdef CONFIG_SYSLOG_LOGGING
++#include "logging.h"
++#endif
++
+ #endif

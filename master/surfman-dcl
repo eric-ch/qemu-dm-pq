@@ -1,18 +1,25 @@
 --- a/ui/surfman.c
 +++ b/ui/surfman.c
-@@ -1,21 +1,196 @@
+@@ -1,21 +1,194 @@
  #include "surfman.h"
  
-+/* HACK: see xen-all.c:1460. */
-+MemoryRegion *xen_get_framebuffer(void);
 +/* HACK: Offset at which we copy ds->surface if the buffer is not shared between the emulation and the guest. */
 +#define HIDDEN_LFB_OFFSET	0xa00000
-+
+ 
+-void surfman_dpy_refresh(struct DisplayState *s);
 +/*
 + * DisplayState is created by the "hardware" through graphic_console_init().
 + */
  
--void surfman_dpy_refresh(struct DisplayState *s);
+-void surfman_dpy_gfx_update(struct DisplayState *s, int x, int y, int w, int h);
+-void surfman_dpy_gfx_resize(struct DisplayState *s);
+-void surfman_dpy_gfx_setdata(struct DisplayState *s);
+-void surfman_dpy_gfx_copy(struct DisplayState *s, int src_x, int src_y,
+-                   int dst_x, int dst_y, int w, int h);
+-
+-void surfman_dpy_text_cursor(struct DisplayState *s, int x, int y);
+-void surfman_dpy_text_resize(struct DisplayState *s, int w, int h);
+-void surfman_dpy_text_update(struct DisplayState *s, int x, int y, int w, int h);
 +/* Called every DisplayChangeListener::gui_timer_interval. */
 +static void surfman_dpy_refresh(struct DisplayState *ds)
 +{
@@ -60,7 +67,9 @@
 +             (s->format == surfman_get_format(ds_get_format(ds))) &&
 +             (s->addr == lfb_addr));
 +}
-+
+ 
+-void surfman_dpy_mouse_set(struct DisplayState *s, int x, int y, int on);
+-void surfman_dpy_cursor_define(struct DisplayState *s, QEMUCursor *cursor);
 +/* The geometry of the framebuffer (Surface) of DisplayState has changed. */
 +static void surfman_dpy_gfx_resize(struct DisplayState *ds)
 +{
@@ -102,28 +111,17 @@
 +    dmbus_sync_recv(ss->dmbus_service, DMBUS_MSG_EMPTY_REPLY, &reply, sizeof (reply));
 +    surfman_lfb_state_save(ss);
 +}
-+
+ 
 +/* The framebuffer (Surface) address has changed.
 + * /!\ We don't have a specific RPC with Surfman for that, so recycle resize. */
 +static void surfman_dpy_gfx_setdata(struct DisplayState *ds)
 +{
 +    surfman_dpy_gfx_resize(ds);
 +}
- 
--void surfman_dpy_gfx_update(struct DisplayState *s, int x, int y, int w, int h);
--void surfman_dpy_gfx_resize(struct DisplayState *s);
--void surfman_dpy_gfx_setdata(struct DisplayState *s);
--void surfman_dpy_gfx_copy(struct DisplayState *s, int src_x, int src_y,
--                   int dst_x, int dst_y, int w, int h);
--
--void surfman_dpy_text_cursor(struct DisplayState *s, int x, int y);
--void surfman_dpy_text_resize(struct DisplayState *s, int w, int h);
--void surfman_dpy_text_update(struct DisplayState *s, int x, int y, int w, int h);
++
 +//static void surfman_dpy_gfx_copy(struct DisplayState *s, int src_x, int src_y,
 +//                                 int dst_x, int dst_y, int w, int h);
- 
--void surfman_dpy_mouse_set(struct DisplayState *s, int x, int y, int on);
--void surfman_dpy_cursor_define(struct DisplayState *s, QEMUCursor *cursor);
++
 +//static void surfman_dpy_text_cursor(struct DisplayState *s, int x, int y);
 +//static void surfman_dpy_text_resize(struct DisplayState *s, int w, int h);
 +//static void surfman_dpy_text_update(struct DisplayState *s, int x, int y, int w, int h);
@@ -152,7 +150,7 @@
 +
 +    surfman_debug("display_limits: %ux%u stride aligned on %u.", *width_max, *height_max, *stride_alignment);
 +}
- 
++
 +static void surfman_on_reconnect(void *opaque)
 +{
 +    struct SurfmanState *ss = opaque;
@@ -211,16 +209,14 @@
 +
 --- /dev/null
 +++ b/ui/surfman.h
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,113 @@
 +#ifndef _SURFMAN_H_
 +# define _SURFMAN_H_
 +
-+#include "qemu-common.h"
-+#include "qemu/log.h"
++#include "hw/xen.h"
 +#include "ui/console.h"
 +#include "xen-dmbus.h"
 +#include "exec/memory.h"
-+#include "logging.h"
 +
 +#define SURFMAN_FLAG "surfman:"
 +#define surfman_debug(fmt, ...) \
@@ -338,12 +334,11 @@
  
      snprintf(path, sizeof(path),
               "/local/domain/0/device-model/%d/physmap/%"PRIx64"/device_model",
-@@ -1457,6 +1457,13 @@ void xen_register_framebuffer(MemoryRegi
+@@ -1457,6 +1457,12 @@ void xen_register_framebuffer(MemoryRegi
      framebuffer = mr;
  }
  
-+/* HACK: Forgive me... I need to know where you are. */
-+MemoryRegion *xen_get_framebuffer(void);
++/* HACK: Get the framebuffer MemoryRegion to setup Surfman's plugins. */
 +MemoryRegion *xen_get_framebuffer(void)
 +{
 +    return framebuffer;

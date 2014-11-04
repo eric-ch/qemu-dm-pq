@@ -1,25 +1,16 @@
---- a/ui/surfman.c
+--- /dev/null
 +++ b/ui/surfman.c
-@@ -1,21 +1,194 @@
- #include "surfman.h"
- 
+@@ -0,0 +1,190 @@
++#include "surfman.h"
++
 +/* HACK: Offset at which we copy ds->surface if the buffer is not shared between the emulation and the guest. */
-+#define HIDDEN_LFB_OFFSET	0xa00000
- 
--void surfman_dpy_refresh(struct DisplayState *s);
++#define HIDDEN_LFB_OFFSET   0xa00000
++
++static struct SurfmanState *ss = NULL;
 +/*
 + * DisplayState is created by the "hardware" through graphic_console_init().
 + */
- 
--void surfman_dpy_gfx_update(struct DisplayState *s, int x, int y, int w, int h);
--void surfman_dpy_gfx_resize(struct DisplayState *s);
--void surfman_dpy_gfx_setdata(struct DisplayState *s);
--void surfman_dpy_gfx_copy(struct DisplayState *s, int src_x, int src_y,
--                   int dst_x, int dst_y, int w, int h);
--
--void surfman_dpy_text_cursor(struct DisplayState *s, int x, int y);
--void surfman_dpy_text_resize(struct DisplayState *s, int w, int h);
--void surfman_dpy_text_update(struct DisplayState *s, int x, int y, int w, int h);
++
 +/* Called every DisplayChangeListener::gui_timer_interval. */
 +static void surfman_dpy_refresh(struct DisplayState *ds)
 +{
@@ -31,13 +22,16 @@
 +static void surfman_dpy_gfx_update(struct DisplayState *ds, int x, int y, int w, int h)
 +{
 +    if (!is_buffer_shared(ds->surface)) {
-+        struct SurfmanState *ss = ds->opaque;
-+        uint8_t *dest = ss->vram_ptr + HIDDEN_LFB_OFFSET;
-+        uint8_t *src = ds_get_data(ds);
-+        unsigned int i, linesize = ds_get_linesize(ds);     // Somehow, the pixman_image_t is 64b aligned ... always?
++        unsigned int linesize = ds_get_linesize(ds);     // Somehow, the pixman_image_t is 64b aligned ... always?
++        unsigned int Bpp = ds_get_bytes_per_pixel(ds);
++        uint8_t *dest = ss->vram_ptr + HIDDEN_LFB_OFFSET + y * linesize + x * Bpp;
++        uint8_t *src = ds_get_data(ds) + y * linesize + x * Bpp;
++        unsigned int i;
 +
++        surfman_debug("update vram:%#"HWADDR_PRIx" src:%p dest:%p %d,%d (%dx%d).",
++                      ss->vram->addr, src, dest, x, y, w, h);
 +        for (i = 0; i < h; ++i) {
-+            memcpy(dest,src, w * ds_get_bytes_per_pixel(ds));
++            memcpy(dest, src, w * Bpp);
 +            dest += linesize;
 +            src += linesize;
 +        }
@@ -57,7 +51,6 @@
 +
 +static int surfman_lfb_state_compare(const struct lfb_state *s, struct DisplayState *ds)
 +{
-+    struct SurfmanState *ss = ds->opaque;
 +    hwaddr lfb_addr;
 +
 +    lfb_addr = is_buffer_shared(ds->surface) ? ss->vram->addr : ss->vram->addr + HIDDEN_LFB_OFFSET;
@@ -67,15 +60,12 @@
 +             (s->format == surfman_get_format(ds_get_format(ds))) &&
 +             (s->addr == lfb_addr));
 +}
- 
--void surfman_dpy_mouse_set(struct DisplayState *s, int x, int y, int on);
--void surfman_dpy_cursor_define(struct DisplayState *s, QEMUCursor *cursor);
++
 +/* The geometry of the framebuffer (Surface) of DisplayState has changed. */
 +static void surfman_dpy_gfx_resize(struct DisplayState *ds)
 +{
 +    struct msg_display_resize msg;
 +    struct msg_empty_reply reply;
-+    struct SurfmanState *ss = ds->opaque;
 +
 +    if (!surfman_lfb_state_compare(&ss->current, ds)) {
 +        return;
@@ -96,22 +86,21 @@
 +        msg.lfb_addr = ss->vram->addr;
 +        msg.lfb_traceable = 1;
 +    } else {
-+        // VRAM is accessible through BAR0 but the VGA emulation creates a surface (pixman_image_t)
-+	// in which it renders a linear framebuffer.
-+        // surfman_gpy_gfx_update() will copy that surface in VRAM at arbitrary offset (HIDDEN_LFB_OFFSET).
 +        msg.lfb_addr = ss->vram->addr + HIDDEN_LFB_OFFSET;
 +        msg.lfb_traceable = 0;
 +    }
-+    surfman_info("resize %dx%d:%d -> %dx%d:%d%s.",
++    surfman_info("resize %dx%d:%d -> %dx%d:%d%s %s %s.",
 +                 ss->current.width, ss->current.height, ss->current.linesize,
 +                 msg.width, msg.height, msg.linesize,
-+		 msg.lfb_addr == ss->vram->addr ? " (shared)": "");
++                 msg.lfb_addr == ss->vram->addr ? " (shared)": "",
++                 ds->have_text ? "have text" : "",
++                 ds->have_gfx ? "have gfx" : "");
 +
 +    dmbus_send(ss->dmbus_service, DMBUS_MSG_DISPLAY_RESIZE, &msg, sizeof (msg));
 +    dmbus_sync_recv(ss->dmbus_service, DMBUS_MSG_EMPTY_REPLY, &reply, sizeof (reply));
 +    surfman_lfb_state_save(ss);
 +}
- 
++
 +/* The framebuffer (Surface) address has changed.
 + * /!\ We don't have a specific RPC with Surfman for that, so recycle resize. */
 +static void surfman_dpy_gfx_setdata(struct DisplayState *ds)
@@ -133,7 +122,6 @@
 +                                           unsigned int *width_max, unsigned int *height_max,
 +                                           unsigned int *stride_alignment)
 +{
-+    struct SurfmanState *ss = ds->opaque;
 +    struct msg_display_get_info msg;
 +    struct msg_display_info reply;
 +
@@ -153,8 +141,6 @@
 +
 +static void surfman_on_reconnect(void *opaque)
 +{
-+    struct SurfmanState *ss = opaque;
-+
 +    surfman_dpy_gfx_resize(ss->ds);
 +}
 +
@@ -169,10 +155,9 @@
 +};
 +
 +/* Initialize Surfman's change listener. */
- void surfman_display_init(DisplayState *ds)
- {
++void surfman_display_init(DisplayState *ds)
++{
 +    DisplayChangeListener *dcl;
-+    struct SurfmanState *ss;
 +
 +    surfman_info("Initialize Surfman display.");
 +
@@ -189,7 +174,6 @@
 +        surfman_error("Could not initialize dmbus.");
 +        goto err_dmbus;
 +    }
-+    ds->opaque = ss;
 +
 +    dcl = g_malloc0(sizeof (*dcl));
 +    dcl->idle = 0;
@@ -205,11 +189,11 @@
 +err_dmbus:
 +err_vram:
 +    g_free(ss);
- }
++}
 +
 --- /dev/null
 +++ b/ui/surfman.h
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,118 @@
 +#ifndef _SURFMAN_H_
 +# define _SURFMAN_H_
 +
@@ -218,9 +202,14 @@
 +#include "xen-dmbus.h"
 +#include "exec/memory.h"
 +
-+#define SURFMAN_FLAG "surfman:"
-+#define surfman_debug(fmt, ...) \
-+    fprintf(stdout, SURFMAN_FLAG "%s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
++#define SURFMAN_DEBUG 0
++#define SURFMAN_FLAG "surfman-ui: "
++# define surfman_debug(fmt, ...)                            \
++    do {                                                    \
++        if (SURFMAN_DEBUG)                                  \
++            fprintf(stdout, SURFMAN_FLAG "%s:%d " fmt "\n", \
++                    __FILE__, __LINE__, ##__VA_ARGS__);     \
++    } while (0)
 +#define surfman_info(fmt, ...) \
 +    fprintf(stdout, SURFMAN_FLAG fmt "\n", ##__VA_ARGS__)
 +#define surfman_warn(fmt, ...) \
@@ -473,11 +462,13 @@
      default:
          break;
      }
-@@ -4316,7 +4326,6 @@ int main(int argc, char **argv, char **e
-         qemu_spice_display_init(ds);
-     }
- #endif
--
-     /* display setup */
-     text_consoles_set_display(ds);
+--- a/hw/xen.h
++++ b/hw/xen.h
+@@ -66,6 +66,7 @@ void xen_modified_memory(ram_addr_t star
  
+ struct MemoryRegion;
+ void xen_register_framebuffer(struct MemoryRegion *mr);
++struct MemoryRegion *xen_get_framebuffer(void);
+ 
+ #if defined(CONFIG_XEN) && CONFIG_XEN_CTRL_INTERFACE_VERSION < 400
+ #  define HVM_MAX_VCPUS 32

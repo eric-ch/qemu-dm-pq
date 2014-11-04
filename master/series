@@ -14,4 +14,5 @@ audio-alsa-stub
 #atapi_passthrough
 atapi-pass-through
 vbe-xt-extensions
+vga-spinlock
 surfman-dcl

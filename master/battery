@@ -860,9 +860,9 @@ This patch adds the battery management to qemu 1.4
  DEF("no-reboot", 0, QEMU_OPTION_no_reboot, \
 --- a/vl.c
 +++ b/vl.c
-@@ -176,6 +176,10 @@ int main(int argc, char **argv)
- # include "logging.h"
- #endif
+@@ -171,6 +171,10 @@ int main(int argc, char **argv)
+ #include "qapi/string-input-visitor.h"
+ #include "ui/xen-input.h"
  
 +/* XenClient: battery
 + * Use to set the battery emulation device */
@@ -871,7 +871,7 @@ This patch adds the battery management to qemu 1.4
  //#define DEBUG_NET
  //#define DEBUG_SLIRP
  
-@@ -3752,6 +3756,16 @@ int main(int argc, char **argv, char **e
+@@ -3747,6 +3751,16 @@ int main(int argc, char **argv, char **e
                  }
                  xen_mode = XEN_ATTACH;
                  break;

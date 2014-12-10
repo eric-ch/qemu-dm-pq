@@ -17,3 +17,4 @@ vbe-xt-extensions
 vga-spinlock
 vga-shadow-bda
 surfman-dcl
+bridge-helper-syslog

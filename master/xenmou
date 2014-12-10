@@ -31,17 +31,7 @@
  #define PCI_DEVICE_ID_NEC_UPD720200      0x0194
 --- /dev/null
 +++ b/hw/xenmou.c
-@@ -0,0 +1,774 @@
-+/*
-+** xenmou.c for XenClient XT
-+**
-+** Made by nicolas
-+** Login   nicolas <nicolas@citrix.com>
-+**
-+** Started on  Wed 05 Jun 2013 14:25:47 BST nicolas
-+** Last update Mon 10 Jun 2013 12:20:09 BST nicolas
-+*/
-+
+@@ -0,0 +1,764 @@
 +/*
 + * ITEmou.c: xen mouse pci card emulator
 + */
@@ -808,17 +798,7 @@
 +type_init(xenmou_register_types)
 --- /dev/null
 +++ b/hw/xenmou.h
-@@ -0,0 +1,37 @@
-+/*
-+** xenmou.h for XenClient XT
-+**
-+** Made by Nicolas DI PRIMA
-+** Login   nicolas <nicolas.diprima@citrix.com>
-+**
-+** Started on  Wed 05 Jun 2013 14:17:23 BST nicolas
-+** Last update Wed 05 Jun 2013 14:56:52 BST nicolas
-+*/
-+
+@@ -0,0 +1,27 @@
 +#ifndef XENMOU_H_
 +# define XENMOU_H_
 +
@@ -848,17 +828,7 @@
 +#endif /* !XENMOU_H_ */
 --- /dev/null
 +++ b/hw/xenmou_regs.h
-@@ -0,0 +1,43 @@
-+/*
-+** xenmou_regs.h for XenClient XT
-+**
-+** Made by Nicolas DI PRIMA
-+** Login   nicolas <nicolas.diprima@citrix.com>
-+**
-+** Started on  Wed 05 Jun 2013 14:11:21 BST nicolas
-+** Last update Thu 06 Jun 2013 12:13:58 BST nicolas
-+*/
-+
+@@ -0,0 +1,33 @@
 +#ifndef XENMOU_REGS_H_
 +# define XENMOU_REGS_H_
 +

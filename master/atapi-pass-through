@@ -1,6 +1,6 @@
 --- a/block.c
 +++ b/block.c
-@@ -4566,3 +4566,31 @@ out:
+@@ -4566,3 +4567,31 @@ out:
          bdrv_delete(bs);
      }
  }
@@ -45,16 +45,26 @@
  block-obj-y += nbd.o sheepdog.o
 --- /dev/null
 +++ b/block/pt-posix.c
-@@ -0,0 +1,677 @@
+@@ -0,0 +1,683 @@
 +/*
-+** pt-posix.c for XenClient XT
-+**
-+** Made by Nicolas DI PRIMA
-+** Login   nicolas <nicolas.diprima@citrix.com>
-+**
-+** Started on  Wed 10 Jul 2013 11:18:33 BST Nicolas DI PRIMA
-+** Last update Mon 20 Jan 2014 12:52:51 GMT Nicolas DI PRIMA
-+*/
++ * ATAPI guest commands translation.
++ *
++ * Copyright (C) 2014 Citrix Systems Ltd
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
 +
 +#include "qemu-common.h"
 +#include "qemu/module.h"
@@ -71,18 +81,24 @@
 +#include <linux/fs.h>
 +
 +/* BDRVPassThrough Definition */
-+//# define PT_DEBUG //Uncomment to enable debugging
 +#include "block/pt.h"
 +
 +/* -- Pass Through function and definitions -------------------------------- */
-+/* TODO: Maybe should be in /var/lib/qemu/ directory
-+ *        */
++/* TODO: Maybe should be in /var/lib/qemu/ directory */
 +#define PT_SHM_NAME_TEMPLATE "/xen-atapi-pt-status-%04x:%04x"
-+
 +
 +/* The template use to determine the lock_file_name field in
 + * BDRVPosixPassThroughState */
 +#define PT_EXCLUSIVE_CD_FILE_TEMPLATE "/var/lock/xen-cd-exclusive-%04x:%04x"
++
++#define DEBUG_PTPOSIX 0
++#define PTPOSIX_TAG "pt-posix:"
++#define DPRINTF(fmt, ...)                                           \
++    do {                                                            \
++        if (DEBUG_PTPOSIX)                                          \
++            fprintf(stdout, PTPOSIX_TAG"%s:%d: " fmt "\n",          \
++                    "block/pt-posix.c", __LINE__, ##__VA_ARGS__);   \
++    } while (0)
 +
 +struct ATAPIShm {
 +    enum ATAPIMediaState mediastate;
@@ -157,7 +173,7 @@
 +    int ret = -1;
 +
 +    if (fstat(bdrvpts->fd, &stat)) {
-+        PT_DPRINTF("[%s] unable to stat the file", strerror(errno));
++        fprintf(stderr, "fstat() failed (%s).\n", strerror(errno));
 +        goto pt_posix_init_shm_error;
 +    }
 +    memset(bdrvpts->shm_name, 0, sizeof (bdrvpts->shm_name));
@@ -166,14 +182,12 @@
 +             major(stat.st_rdev), minor(stat.st_rdev));
 +    /* @open the SHared Memory */
 +    bdrvpts->shmfd = shm_open(bdrvpts->shm_name, O_CREAT | O_RDWR, 0666);
-+    if (bdrvpts->shmfd == -1) {
-+        PT_DPRINTF("[%s] unable to open a POSIX SHared Memory objectif (%s)",
-+                    strerror(errno), bdrvpts->shm_name);
++    if (bdrvpts->shmfd < 0) {
++        fprintf(stderr, "shm_open() failed (%s).\n", strerror(errno));
 +        goto pt_posix_init_shm_error;
 +    }
 +    if (ftruncate(bdrvpts->shmfd, sizeof(*(bdrvpts->shm))) == -1) {
-+        PT_DPRINTF("[%s] unable to truncate the SHM file",
-+                   strerror(errno));
++        fprintf(stderr, "ftruncate() failed (%s).\n", strerror(errno));
 +        goto pt_posix_init_shm_error_unlink;
 +    }
 +    /* @map the SHared Memory */
@@ -181,8 +195,7 @@
 +    bdrvpts->shm = mmap(NULL, sizeof (*(bdrvpts->shm)), PROT_READ|PROT_WRITE,
 +                        MAP_SHARED, bdrvpts->shmfd, 0);
 +    if (bdrvpts->shm == MAP_FAILED) {
-+        PT_DPRINTF("[%s] unable to map the SHM memory",
-+                   strerror(errno));
++        fprintf(stderr, "mmap() failed (%s).\n", strerror(errno));
 +        goto pt_posix_init_shm_error_unmap;
 +    }
 +
@@ -301,11 +314,9 @@
 +    int ret;
 +
 +    ret = ioctl(s->fd, req, buf);
-+    if (ret == -1) {
-+        PT_DPRINTF("IOCTL(%s, 0x%04lx) error: %s",
-+                   bs->filename, req, strerror(errno));
++    if (ret < 0) {
++        fprintf(stderr, "ioctl() failed (%s).\n", strerror(errno));
 +    }
-+
 +    return ret;
 +}
 +
@@ -368,11 +379,10 @@
 +    uint32_t v4v_ring_size = V4V_ATAPI_PT_RING_SIZE;
 +    int ret = -1;
 +
++    DPRINTF("%s: Open v4v socket.", __FUNCTION__);
 +    pts->v4v_fd = v4v_socket(SOCK_DGRAM);
-+    PT_DPRINTF("try to open device through v4v: %s", filename);
-+    if (pts->v4v_fd == -1) {
-+        PT_DPRINTF("unable to create a v4v socket for device(%s)",
-+                   filename);
++    if (pts->v4v_fd < 0) {
++        fprintf(stderr, "v4v_socket() failed (%s).\n", strerror(errno));
 +        goto exit;
 +    }
 +
@@ -382,14 +392,14 @@
 +    pts->remote_addr.port = ATAPI_CDROM_PORT;
 +    pts->remote_addr.domain = 0;
 +
-+    ret = ioctl(pts->v4v_fd, V4VIOCSETRINGSIZE, &v4v_ring_size);
-+    ret = v4v_bind(pts->v4v_fd, &pts->local_addr, 0);
++    DPRINTF("%s: Set v4v ring size.", __FUNCTION__);
++    ioctl(pts->v4v_fd, V4VIOCSETRINGSIZE, &v4v_ring_size);
 +
-+    if (ret == -1) {
++    DPRINTF("%s: Bind v4v socket with remote.", __FUNCTION__);
++    if (v4v_bind(pts->v4v_fd, &pts->local_addr, 0)) {
 +        v4v_close(pts->v4v_fd);
 +        pts->v4v_fd = -1;
-+        PT_DPRINTF("unable to bind a v4v socket for device(%s)",
-+                   filename);
++        fprintf(stderr, "v4v_bind() failed (%s).\n", strerror(errno));
 +        goto exit;
 +    }
 +
@@ -398,23 +408,21 @@
 +    memcpy(&io_buf[1], filename, dev_name_len);
 +    io_buf[dev_name_len + 1] = '\0';
 +
-+    ret = v4v_sendto(pts->v4v_fd, io_buf, dev_name_len + 2,
-+                     0, &pts->remote_addr);
-+
++    DPRINTF("%s: send ATAPI_PT_OPEN through v4v.", __FUNCTION__);
++    ret = v4v_sendto(pts->v4v_fd, io_buf, dev_name_len + 2, 0, &pts->remote_addr);
 +    if (ret != dev_name_len + 2) {
-+        PT_DPRINTF("unable to send the complete message: %s(%d)", io_buf, ret);
++        fprintf(stderr, "v4v_sendto() failed (%s).\n", strerror(errno));
 +        ret = -1;
 +        v4v_close(pts->v4v_fd);
 +        goto exit;
 +    }
 +
 +    ret = v4v_recvfrom(pts->v4v_fd, io_buf, 4, 0, &pts->remote_addr);
-+
++    DPRINTF("%s: recv %c%c.", __FUNCTION__, io_buf[1], io_buf[2]);
 +    if (io_buf[1] != 'o' || io_buf[2] != 'k') {
++        fprintf(stderr, "v4v_recvfrom() failed (%s).\n", strerror(errno));
 +        v4v_close(pts->v4v_fd);
 +        pts->v4v_fd = -1;
-+        PT_DPRINTF("wrong status report for file(%s) status '%c%c'",
-+                   filename, io_buf[1], io_buf[2]);
 +        goto exit;
 +    }
 +
@@ -430,13 +438,13 @@
 +    int ret = -1;
 +
 +    if (pts->v4v_fd == -1) {
-+        PT_DPRINTF("no v4v connection close");
++        DPRINTF("%s: v4v connection not initialized.", __FUNCTION__);
 +        goto exit;
 +    }
 +
 +    io_buf[0] = ATAPI_PT_CLOSE;
 +    io_buf[1] = pts->dev_id;
-+
++    DPRINTF("%s: send ATAPI_PT_CLOSE through v4v.", __FUNCTION__);
 +    v4v_sendto(pts->v4v_fd, io_buf, 2, 0, &pts->remote_addr);
 +
 +    ret = 0;
@@ -449,7 +457,8 @@
 +    BDRVStubdomPassThroughState* pts = bs->opaque;
 +
 +    if (pt_v4v_close_common(pts) == -1) {
-+        PT_DPRINTF("error: can't close %s", bs->filename);
++        DPRINTF("%s: Could not close v4v connection for \"%s\".",
++                __FUNCTION__, bs->filename);
 +    }
 +}
 +
@@ -469,23 +478,20 @@
 +
 +    memset(&pts, 0, sizeof (BDRVStubdomPassThroughState));
 +
-+    PT_DPRINTF("POKE");
 +    ret = pt_v4v_open_common(&pts, filename);
 +    if (ret == -1) {
-+        PT_DPRINTF("error: can't open %s", filename);
++        DPRINTF("%s: Cannot open \"%s\".", __FUNCTION__, filename);
 +        goto out;
 +    }
 +
-+    PT_DPRINTF("POKE");
 +    ret = pt_v4v_close_common(&pts);
 +    if (ret == -1) {
-+        PT_DPRINTF("error: can't close %s", filename);
++        DPRINTF("%s: Cannot close \"%s\".", __FUNCTION__, filename);
 +        goto out;
 +    }
 +
 +    prio = 100;
-+
-+    PT_DPRINTF("probe device %s with prio %d", filename, prio);
++    DPRINTF("probe device \"%s\" with prio %d", filename, prio);
 +out:
 +    return prio;
 +}
@@ -499,25 +505,28 @@
 +    int ret = -1;
 +
 +    if (pts->v4v_fd == -1) {
-+        PT_DPRINTF("no v4v connection");
++        DPRINTF("%s: v4v connection not initialized.", __FUNCTION__);
 +        goto exit;
 +    }
-+
-+    PT_DPRINTF("POKE");
 +
 +    io_buf[0] = ATAPI_PT_SET_STATE;
 +    io_buf[1] = pts->dev_id;
 +    io_buf[2] = (cmd & 0xFF);
 +
-+    v4v_sendto(pts->v4v_fd, io_buf, 3, 0, &pts->remote_addr);
++    DPRINTF("%s: send ATAPI_PT_SET_STATE through v4v.", __FUNCTION__);
++    ret = v4v_sendto(pts->v4v_fd, io_buf, 3, 0, &pts->remote_addr);
++    if (ret != 3) {
++        fprintf(stderr, "v4v_sendto() failed (%s).\n", strerror(errno));
++        ret = -1;
++        v4v_close(pts->v4v_fd);
++        goto exit;
++    }
 +
 +    v4v_recvfrom(pts->v4v_fd, io_buf, 3, 0, &pts->remote_addr);
-+
++    DPRINTF("%s: recv %c%c.", __FUNCTION__, io_buf[1], io_buf[2]);
 +    if (io_buf[1] != 'o' || io_buf[2] != 'k') {
 +        v4v_close(pts->v4v_fd);
 +        pts->v4v_fd = -1;
-+        PT_DPRINTF("wrong status report for file(%s) status '%c%c'",
-+                   bs->filename, io_buf[1], io_buf[2]);
 +        goto exit;
 +    }
 +    ret = 0;
@@ -533,26 +542,30 @@
 +    int ret = -1;
 +
 +    if (pts->v4v_fd == -1) {
-+        PT_DPRINTF("no v4v connection");
++        DPRINTF("%s: v4v connection not initialized.", __FUNCTION__);
 +        goto exit;
 +    }
-+
-+    PT_DPRINTF("POKE");
 +
 +    io_buf[0] = ATAPI_PT_GET_STATE;
 +    io_buf[1] = pts->dev_id;
 +    io_buf[2] = (cmd & 0xFF);
 +    io_buf[3] = 0x00;
 +
-+    v4v_sendto(pts->v4v_fd, io_buf, 4, 0, &pts->remote_addr);
++    DPRINTF("%s: send ATAPI_PT_GET_STATE through v4v.", __FUNCTION__);
++    ret = v4v_sendto(pts->v4v_fd, io_buf, 4, 0, &pts->remote_addr);
++    if (ret != 4) {
++        fprintf(stderr, "v4v_sendto() failed (%s).\n", strerror(errno));
++        ret = -1;
++        v4v_close(pts->v4v_fd);
++        goto exit;
++    }
 +
 +    v4v_recvfrom(pts->v4v_fd, io_buf, 4, 0, &pts->remote_addr);
-+
++    DPRINTF("%s: recv %c%c.", __FUNCTION__, io_buf[1], io_buf[2]);
 +    if (io_buf[1] != 'o' || io_buf[2] != 'k') {
++        fprintf(stderr, "v4v_recvfrom() failed (%s).\n", strerror(errno));
 +        v4v_close(pts->v4v_fd);
 +        pts->v4v_fd = -1;
-+        PT_DPRINTF("wrong status report for file(%s) status '%c%c'",
-+                   bs->filename, io_buf[1], io_buf[2]);
 +        goto exit;
 +    }
 +    *data = io_buf[3];
@@ -603,7 +616,7 @@
 +    uint8_t *copy_of_cmd_din_xferp = NULL;
 +
 +    if (pts->v4v_fd == -1) {
-+        PT_DPRINTF("no v4v connection");
++        DPRINTF("%s: v4v connection not initialized.", __FUNCTION__);
 +        goto exit;
 +    }
 +
@@ -616,18 +629,16 @@
 +    io_buf[5] = ((req & 0x000000FF) >>  0) & 0x00FF;
 +    len = 6;
 +
-+    PT_DPRINTF("send IOCTL(0x%08lx)", req);
-+
 +    switch (req) {
 +    case SG_GET_RESERVED_SIZE:
++        DPRINTF("%s: send ATAPI_PT_IOCTL(%#lx) through v4v.", __FUNCTION__, req);
 +        v4v_sendto(pts->v4v_fd, io_buf, len, 0, &pts->remote_addr);
 +
 +        len = v4v_recvfrom(pts->v4v_fd, io_buf, len + 1, 0, &pts->remote_addr);
++        DPRINTF("%s: recv %c%c.", __FUNCTION__, io_buf[1], io_buf[2]);
 +        if (io_buf[1] != 'o' || io_buf[2] != 'k') {
 +            v4v_close(pts->v4v_fd);
 +            pts->v4v_fd = -1;
-+            PT_DPRINTF("wrong status report for file(%s) status '%c%c'",
-+                       bs->filename, io_buf[1], io_buf[2]);
 +            goto exit;
 +        }
 +
@@ -658,18 +669,15 @@
 +            copy_of_cmd_din_xferp = (uint8_t*)(uintptr_t)cmd->din_xferp;
 +	}
 +
-+	PT_DPRINTF("ATAPI CMD(0x%02x) len(%d) (%s)",
-+                   *(uint8_t*)(uintptr_t)cmd->request, sg_buf-io_buf,
-+                   is_dout ? "is_dout" : "is_din");
++        DPRINTF("%s: send ATAPI_CMD(%#02x) through v4v.", __FUNCTION__,
++                *(uint8_t*)(uintptr_t)cmd->request);
 +        v4v_sendto(pts->v4v_fd, io_buf, len, 0, &pts->remote_addr);
 +
 +        len = v4v_recvfrom(pts->v4v_fd, io_buf, MAX_V4V_MSG_SIZE, 0, &pts->remote_addr);
-+
++        DPRINTF("%s: recv %c%c.", __FUNCTION__, io_buf[1], io_buf[2]);
 +        if (io_buf[1] != 'o' || io_buf[2] != 'k') {
 +            v4v_close(pts->v4v_fd);
 +            pts->v4v_fd = -1;
-+            PT_DPRINTF("wrong status report for file(%s) status '%c%c'",
-+                       bs->filename, io_buf[1], io_buf[2]);
 +            ret = -1;
 +            goto exit;
 +        }
@@ -684,11 +692,9 @@
 +            memcpy(copy_of_cmd_din_xferp, sg_buf, current_transfer_len);
 +            sg_buf += current_transfer_len;
 +        }
-+        PT_DPRINTF("cmd->request_len(%d) cmd->max_response_len(%d)",
-+                   cmd->request_len, cmd->max_response_len);
 +        break;
 +    default:
-+        PT_DPRINTF("IOCTL(0x%08lx) not handle for passthrough", req);
++        DPRINTF("%s: ioctl(%#08lx) not handled for pass-through.", __FUNCTION__, req);
 +        goto exit;
 +    }
 +
@@ -725,16 +731,24 @@
 +block_init(bdrv_pt_init);
 --- /dev/null
 +++ b/block/pt.c
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,167 @@
 +/*
-+** pt.c for XenClient XT
-+**
-+** Made by Nicolas DI PRIMA
-+** Login   nicolas <nicolas.diprima@citrix.com>
-+**
-+** Started on  Wed 10 Jul 2013 16:35:03 BST Nicolas DI PRIMA
-+** Last update Wed 10 Jul 2013 16:49:54 BST Nicolas DI PRIMA
-+*/
++ * Copyright (C) 2014 Citrix Systems Ltd
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
 +
 +#include "qemu-common.h"
 +#include "block/block_int.h"
@@ -959,16 +973,26 @@
          size = max_size;
 --- /dev/null
 +++ b/hw/ide/atapi_pt.c
-@@ -0,0 +1,1444 @@
+@@ -0,0 +1,1454 @@
 +/*
-+** atapi_pt.c for XenClient XT
-+**
-+** Made by Nicolas DI PRIMA
-+** Login   nicolas <nicolas.diprima@citrix.com>
-+**
-+** Started on  Fri 05 Jul 2013 17:53:16 BST nicolas
-+** Last update Tue 08 Oct 2013 08:30:38 BST Nicolas DI PRIMA
-+*/
++ * ATAPI guest commands translation.
++ *
++ * Copyright (C) 2014 Citrix Systems Ltd
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
 +
 +#include <sys/mman.h>
 +#include <scsi/sg.h>
@@ -2406,16 +2430,26 @@
 +}
 --- /dev/null
 +++ b/hw/ide/atapi_pt.h
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,150 @@
 +/*
-+** atapi_pt.h for XenClient XT
-+**
-+** Made by Nicolas DI PRIMA
-+** Login   nicolas <nicolas@citrix.com>
-+**
-+** Started on  Tue 09 Jul 2013 10:10:51 BST nicolas
-+** Last update Thu 05 Sep 2013 15:02:25 BST Nicolas DI PRIMA
-+*/
++ * ATAPI guest commands translation.
++ *
++ * Copyright (C) 2014 Citrix Systems Ltd
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
 +
 +#ifndef ATAPI_PT_H_
 +# define ATAPI_PT_H_
@@ -2799,40 +2833,27 @@
  
 --- /dev/null
 +++ b/include/block/pt.h
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,38 @@
 +/*
-+** pt.h for XenClient XT
-+**
-+** Made by Nicolas DI PRIMA
-+** Login   nicolas <nicolas.diprima@citrix.com>
-+**
-+** Started on  Wed 10 Jul 2013 16:38:57 BST Nicolas DI PRIMA
-+** Last update Mon 20 Jan 2014 12:52:21 GMT Nicolas DI PRIMA
-+*/
++ * Copyright (C) 2014 Citrix Systems Ltd
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
 +
-+#ifndef PT_H_
-+# define PT_H_
-+
-+#if defined (PT_DEBUG)
-+# define PT_DPRINTF(fmt, args...) \
-+    do { \
-+        fprintf(stderr, "[%s][%s(%d)]: " fmt "\n", \
-+                __FILE__, __func__, __LINE__, ## args); \
-+    } while (0)
-+
-+# define POKE() \
-+  do { \
-+      fprintf(stderr, "[%s][%s(%d)]: POKE\n", \
-+              __FILE__, __func__, __LINE__); \
-+  } while (0)
-+
-+#else  /* !ATAPI_PT_DEBUG */
-+# define PT_DPRINTF(fmt, args...) \
-+    do { } while (0)
-+# define POKE() \
-+    do { } while (0)
-+
-+#endif
++#ifndef _PT_H_
++# define _PT_H_
 +
 +enum ATAPIMediaState {
 +    MEDIA_STATE_UNKNOWN = 0x00,
@@ -2850,7 +2871,7 @@
 +    BLOCK_PT_CMD_GET_SHM_MEDIASTATE      = 0x05
 +};
 +
-+#endif /* !PT_H_ */
++#endif /* !_PT_H_ */
 --- a/include/qemu/event_notifier.h
 +++ b/include/qemu/event_notifier.h
 @@ -26,6 +26,8 @@ struct EventNotifier {
